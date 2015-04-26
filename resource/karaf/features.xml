@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Karaf    
+-->
+<features name="{{artifactId}}.kar-{{artifactVersion}}"
+  xmlns="http://karaf.apache.org/xmlns/features/v1.2.0">
+    <feature name="{{artifactId}}.kar" description="{{description}}" version="{{artifactVersion}}" resolver="(obr)">
+        <details>{{description}}</details>
+        <feature>scr</feature>
+<!--        <bundle>mvn:org.apache.camel/camel-core/2.15.1</bundle> -->
+<!--        <bundle>mvn:org.apache.camel/camel-blueprint/2.15.1</bundle> -->
+        <bundle>mvn:{{groupId}}/{{artifactId}}.kar/{{artifactVersion}}</bundle>
+    </feature>
+</features>

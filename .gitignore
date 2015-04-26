@@ -1,0 +1,11 @@
+*~
+bin
+gen
+lib_managed
+*.bak
+target
+.*
+boot
+src_managed
+deploy
+tmp
