@@ -1,13 +1,24 @@
+Sample project using Finagle, OSGi(Karaf) and Docker for microservices
+======================================================================
+
 https://github.com/PhilAndrew/Scala-Karaf
 
-sbt clean test assembly deploy karaf
+Build KAR
+---------
 
-cp deploy/sample-0.1-SNAPSHOT.kar ~/lib/apache-karaf-4.0.0.M1/deploy
+```sbt clean karaf
+```
+
+Build Dockerfile
+----------------
+
+```sbt docker
+```
 
 Build Docker Image
 ------------------
 
-```docker build -t asami/finagle-karaf-docker .
+```docker build -f target/docker/Dockerfile -t asami/finagle-karaf-docker .
 ```
 
 Run foreground
@@ -21,6 +32,3 @@ Access the Finagle server on Karaf in Docker
 
 ```curl http://192.168.59.104:8080 -v
 ```
-
-
-shell.init.script

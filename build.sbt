@@ -1,16 +1,14 @@
-//
-// sbt clean assembly deploy karaf
-//
-
+// sbt clean karaf
+// sbt docker
 def versionNumber = "0.1-SNAPSHOT"
 
 def groupId = "com.example"
 def artifactId = "sample"
 def artifactVersion = "0.1.0.SNAPSHOT"
 
-def projectDescription = "Scala Osgi(Karaf) with Sbt for Finagle Service"
-def authorName = "author"
-def sbtProjectName = "Sample"
+def projectDescription = "Sample project using Finagle, OSGi(Karaf) and Docker for microservices"
+def authorName = "example"
+def sbtProjectName = "sample"
 
 // OSGi Settings
 def osgiExportPackage = "sample.api"
@@ -20,28 +18,6 @@ def osgiImportPackage = Seq(
   "sun.misc;resolution:=optional",
   "org.osgi.service.blueprint;version=\"[1.0.0,2.0.0)\""
 )
-// def osgiImportPackage = Seq(
-//   "sun.misc;resolution:=optional",
-//   "org.osgi.service.blueprint;version=\"[1.0.0,2.0.0)\"",
-//   "!aQute.bnd.annotation.*",
-//   "*"
-// )
-// def osgiImportPackage = Seq(
-//   "com.twitter.finagle",
-//   "sample",
-//   """org.osgi.framework;version="[1.6,2)"""",
-//   """scala;version="[2.10,3)"""",
-//   """scala.reflect;version="[2.10,3)"""",
-//   """scala.runtime;version="[2.10,3)"""",
-//   "sun.misc;resolution:=optional",
-//   "org.osgi.service.blueprint;version=\"[1.0.0,2.0.0)\"",
-//   "!aQute.bnd.annotation.*"
-// )
-// def osgiAdditionalHeaders = Map(
-//   "Service-Component" -> "*",
-//   "Conditional-Package" -> "scala.*"
-// )
-def osgiAdditionalHeaders = Map.empty[String, String]
 def bundleActivator = "sample.osgi.Activator"
 def jdkVersion = "1.7.0_75"
 def scalaVersionString = "2.10.5"
@@ -62,18 +38,9 @@ def artifactFileName = artifactId + "-" + artifactVersion
 def karFileName = artifactFileName + ".kar"
 def majorVersion() = scalaVersionString.split('.').dropRight(1).mkString(".")
 
-// def projectFileName = artifactId + "_" + majorVersion() + "-" + versionNumber
 def projectFileName = s"$artifactId-osgi-$versionNumber"
 
 scalaVersion := scalaVersionString
-
-//lazy val fooProject = (project in file(".")) // Obtain the root project reference
-//  .enablePlugins(SbtOsgi)  // Enables sbt-osgi for this project. This will automatically append
-                           // the plugin's default settings to this project thus providing the
-                           // `osgiBundle` task.
-
-// This is where we define the OSGi information, change the following to fit your OSGi needs
-// outputs target/scala-2.11/scalaosgiwithsbt_2.11-1.0.jar
 
 name := sbtProjectName
 
@@ -102,18 +69,6 @@ packageOptions in (Compile, packageBin) ++= Seq(
   Package.ManifestAttributes("Require-Capability" -> """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.7))"""")
 )
 
-// OsgiKeys.exportPackage := Seq(osgiExportPackage)
-
-// OsgiKeys.privatePackage := Seq(osgiPrivatePackage)
-
-// OsgiKeys.importPackage := osgiImportPackage
-
-// OsgiKeys.bundleActivator := Option(bundleActivator)
-
-// OsgiKeys.additionalHeaders := osgiAdditionalHeaders
-
-// osgiSettings
-
 def entriesInDir(f: File):List[File] = f :: (if (f.isDirectory) IO.listFiles(f).toList.flatMap(entriesInDir(_)) else Nil)
 
 def mapForZip(x: List[File], here: String) = x.map(d => (d, {
@@ -136,13 +91,16 @@ def copyFileWithTemplate(in: File, out: File) = {
 val karafTask = TaskKey[Unit]("karaf", "Create Karaf kar file")
 
 karafTask := {
-  val zipFile = new File("deploy/" + karFileName)
+  val _ = assembly.value
+  val assemblyFile = (assemblyJarName in assembly).value
+
+  val zipFile = new File("target/osgi/" + karFileName)
   IO.delete(zipFile)
 
-  val distdir = new File("deploy/karaf")
+  val distdir = new File("target/osgi/karaf")
   IO.delete(distdir)
 
-  IO.createDirectory(new File("deploy/karaf/META-INF"))
+  IO.createDirectory(new File("target/osgi/karaf/META-INF"))
 
   val lines = Seq[String](
     "Manifest-Version: 1.0",
@@ -150,25 +108,25 @@ karafTask := {
     "Created-By: Apache Maven",
     "Built-By: " + authorName,
     "Build-Jdk: " + jdkVersion)
-  IO.writeLines(new File("deploy/karaf/META-INF/MANIFEST.MF"), lines)
+  IO.writeLines(new File("target/osgi/karaf/META-INF/MANIFEST.MF"), lines)
 
-  IO.createDirectory(new File("deploy/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId))
+  IO.createDirectory(new File("target/osgi/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId))
 
   // place pom.properties and pom.xml here
   copyFileWithTemplate(new File("resource/maven/pom.properties"), 
-      new File("deploy/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId + "/pom.properties"))
+      new File("target/osgi/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId + "/pom.properties"))
   copyFileWithTemplate(new File("resource/maven/pom.xml"), 
-      new File("deploy/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId + "/pom.xml"))
+      new File("target/osgi/karaf/META-INF/maven/" + groupId + "/" + mavenArtifactId + "/pom.xml"))
 
-  IO.createDirectory(new File("deploy/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
+  IO.createDirectory(new File("target/osgi/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
       "/" + artifactVersion))
   
-  IO.copyFile(new File("target/scala-" + majorVersion() + "/" + projectFileName + ".jar"), 
-              new File("deploy/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
+  IO.copyFile(new File("target/scala-" + majorVersion() + "/" + assemblyFile), 
+              new File("target/osgi/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
                 "/" + artifactVersion + "/" + artifactId + ".kar-" + 
                 artifactVersion + ".jar"))
 
-  val featureDestFile = new File("deploy/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
+  val featureDestFile = new File("target/osgi/karaf/repository/" + groupIdPath() + "/" + mavenArtifactId + 
                 "/" + artifactVersion + "/" + artifactId + ".kar-" +
                 artifactVersion + "-features.xml")
   copyFileWithTemplate(new File("resource/karaf/features.xml"), featureDestFile)
@@ -181,9 +139,9 @@ karafTask := {
   //IO.delete(distdir)
 }
 
-val deployTask = TaskKey[Unit]("deploy", "Place the jar into a destination directory")
+val dockerTask = TaskKey[Unit]("docker", "Create Dockerfile")
 
-deployTask := {
-  IO.copyFile(new File("target/scala-" + majorVersion() + "/" + projectFileName + ".jar"), 
-              new File("deploy/" + projectFileName + ".jar"))
+dockerTask := {
+  val target = new File("target/docker/Dockerfile")
+  copyFileWithTemplate(new File("resource/docker/Dockerfile"), target)
 }
